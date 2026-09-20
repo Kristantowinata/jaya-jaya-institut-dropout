@@ -7,10 +7,11 @@ selected_features = joblib.load("selected_features.joblib")
 
 st.set_page_config(page_title="Prediksi Dropout Siswa - Jaya Jaya Institut", page_icon="🎓", layout="centered")
 
-st.title("🎓 Prediksi Status Siswa - Jaya Jaya Institut")
+st.title("🎓 Prediksi Risiko Dropout Siswa - Jaya Jaya Institut")
 st.write(
     "Masukkan data akademik dan administratif siswa untuk memprediksi kemungkinan "
-    "status studinya: **Dropout**, **Enrolled** (masih terdaftar), atau **Graduate** (lulus)."
+    "siswa tersebut **Dropout** atau **Graduate** (lulus). Cocok dipakai untuk siswa yang "
+    "masih aktif berkuliah (belum lulus/keluar), sebagai deteksi dini risiko dropout."
 )
 
 with st.form("prediction_form"):
@@ -34,7 +35,7 @@ with st.form("prediction_form"):
         scholarship = st.selectbox("Penerima beasiswa?", ["Tidak", "Ya"])
         debtor = st.selectbox("Memiliki tunggakan (debtor)?", ["Tidak", "Ya"])
 
-    submitted = st.form_submit_button("Prediksi Status Siswa")
+    submitted = st.form_submit_button("Prediksi Risiko Dropout")
 
 if submitted:
     input_data = pd.DataFrame([{
@@ -53,22 +54,20 @@ if submitted:
     }])[selected_features]
 
     prediction = model.predict(input_data)[0]
-    proba = model.predict_proba(input_data)[0]
-    proba_df = pd.DataFrame({
-        "Status": model.classes_,
-        "Probabilitas": proba,
-    }).sort_values("Probabilitas", ascending=False)
+    prob_dropout = model.predict_proba(input_data)[0][1]
 
     st.subheader("Hasil Prediksi")
 
-    if prediction == "Dropout":
-        st.error(f"⚠️ Prediksi: **{prediction}** — siswa ini berisiko tinggi untuk dropout. Disarankan diberi bimbingan khusus.")
-    elif prediction == "Enrolled":
-        st.warning(f"📘 Prediksi: **{prediction}** — siswa ini diperkirakan masih akan terus berkuliah (belum lulus).")
+    if prediction == 1:
+        st.error(f"⚠️ Prediksi: **Berisiko Dropout** (probabilitas {prob_dropout:.1%}). Disarankan diberi bimbingan khusus.")
     else:
-        st.success(f"🎓 Prediksi: **{prediction}** — siswa ini diperkirakan akan lulus (Graduate).")
+        st.success(f"🎓 Prediksi: **Kemungkinan Graduate** (probabilitas dropout hanya {prob_dropout:.1%}).")
 
-    st.write("**Probabilitas tiap kemungkinan status:**")
+    st.write("**Probabilitas Dropout:**")
+    proba_df = pd.DataFrame({
+        "Status": ["Graduate", "Dropout"],
+        "Probabilitas": [1 - prob_dropout, prob_dropout],
+    })
     st.bar_chart(proba_df.set_index("Status"))
     st.dataframe(
         proba_df.assign(Probabilitas=lambda d: (d["Probabilitas"] * 100).round(1).astype(str) + "%"),
@@ -78,6 +77,7 @@ if submitted:
 
 st.divider()
 st.caption(
-    "Model: Random Forest Classifier, dilatih pada dataset "
-    "\"Predict Students' Dropout and Academic Success\" (UCI Machine Learning Repository)."
+    "Model: Random Forest Classifier (klasifikasi biner Dropout vs Graduate), dilatih pada dataset "
+    "\"Predict Students' Dropout and Academic Success\" (UCI Machine Learning Repository). "
+    "Siswa berstatus Enrolled tidak digunakan untuk melatih model karena belum memiliki hasil akhir."
 )

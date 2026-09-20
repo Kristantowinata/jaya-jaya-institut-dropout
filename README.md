@@ -84,7 +84,7 @@ Aplikasi akan otomatis terbuka di browser pada `http://localhost:8501`. Isi form
 
 ### Mengakses via Streamlit Community Cloud
 
-- Link prototype: [isi link Streamlit Community Cloud setelah deploy]
+- Link prototype: `https://jaya-jaya-institut-dropout-brwmna5zwjwx4q6jrsdlos.streamlit.app/`  
 
 ## Conclusion
 
